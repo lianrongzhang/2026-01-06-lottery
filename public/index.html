@@ -1,0 +1,294 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>尾牙抽獎系統</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎊</text></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <main>
+            <h1 class="site-logo">
+                <img src="logo.png" alt="TRE Technology" />
+            </h1>
+            <div class="main-layout">
+                <!-- 左側控制面板 -->
+                <div class="left-section">
+                    <!-- 控制面板 -->
+                    <div class="control-panel">
+                        <div class="panel-header">
+                            <h2>控制面板</h2>
+                        </div>
+
+                        <div class="panel-section">
+                            <div class="section-title">獎項選擇</div>
+                            <div class="prize-selector">
+                                <select id="currentPrize"></select>
+                                <button id="editPrizeBtn" class="btn btn-secondary">設定</button>
+                            </div>
+                        </div>
+
+                        <div class="panel-section">
+                            <div class="section-title">掃描或手動新增</div>
+                            <div class="barcode-input-group">
+                                <input type="text" id="barcodeInput" placeholder="請掃描 Barcode">
+                            </div>
+                            <div class="action-buttons">
+                                <button id="manualAddBtn" class="btn btn-secondary btn-block">✍️ 開啟手動新增視窗</button>
+                                <button id="openDisplayBtn" class="btn btn-primary btn-block">📺 開啟投影視窗</button>
+                                <button id="uploadDisplayBackgroundBtn" class="btn btn-secondary btn-block">🖼️ 上傳中獎背景</button>
+                            </div>
+                        </div>
+
+                        <div class="panel-section">
+                            <div class="section-title">資料管理</div>
+                            <div class="action-buttons">
+                                <button id="loadDataBtn" class="btn btn-primary btn-block">📂 載入員工資料 (Excel)</button>
+                                <button id="exportBtn" class="btn btn-success btn-block">💾 匯出中獎名單</button>
+                                <button id="clearBtn" class="btn btn-danger btn-block">🗑️ 清空所有記錄</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 統計資訊 -->
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalWinners">0</div>
+                            <div class="stat-label">總中獎人數</div>
+                        </div>
+                        <div class="stat-card" id="employeeStatsCard" style="cursor: pointer;" title="點擊查看員工清單">
+                            <div class="stat-number" id="totalEmployees">0</div>
+                            <div class="stat-label">員工總數</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 左側控制面板結束 -->
+
+                <!-- 右側中獎名單 -->
+                <div class="winners-section">
+                    <h2>🏆 中獎名單</h2>
+                    <div class="winners-scroll-viewport">
+                        <div class="winners-scroll-track" id="winnersScrollTrack">
+                            <ul id="allWinnersList" class="all-winners-list"></ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- 右側中獎名單結束 -->
+            </div>
+            <!-- main-layout 結束 -->
+        </main>
+    </div>
+
+    <!-- 中獎彈出視窗 -->
+    <div id="winnerModal" class="modal winner-modal">
+        <div class="modal-content winner-modal-content">
+            <div class="winner-display-popup">
+                <div class="winner-content">
+                    <div class="prize-label" id="winnerPrizeLabel"></div>
+                    <div class="winner-name-popup" id="winnerName"></div>
+                    <div class="winner-info-popup" id="winnerInfo"></div>
+                </div>
+                <button id="closeWinnerModal" class="btn btn-primary close-winner-btn">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 手動新增對話框 -->
+    <div id="manualModal" class="modal employee-glass-overlay" style="display:none;">
+        <div class="modal-content employee-glass-card">
+
+
+            <span class="close employee-glass-close" id="manualModalCloseBtn">&times;</span>
+
+
+            <h2 class="employee-glass-title">✍️ 手動新增中獎者</h2>
+
+
+            <form id="manualForm" class="employee-glass-form">
+
+
+                <div class="form-group glass-form-group">
+                    <label for="manualBarcode">Barcode</label>
+                    <input type="text" id="manualBarcode" name="barcode" class="glass-input"
+                        placeholder="請輸入或掃描 Barcode" required autofocus>
+                </div>
+
+
+                <div class="form-actions glass-form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        確認新增
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="manualModalCancelBtn">
+                        取消
+                    </button>
+                </div>
+
+
+            </form>
+        </div>
+    </div>
+
+    <!-- 檔案輸入 (隱藏) -->
+    <input type="file" id="fileInput" accept=".json,.csv,.xlsx" style="display: none;">
+    <input type="file" id="winnerBgInput" accept="image/*" style="display: none;">
+    <div id="editPrizeModal" class="modal prize-glass-overlay" style="display:none;">
+        <div class="modal-content prize-glass-card">
+            <span class="close prize-glass-close" id="editPrizeCloseBtn">&times;</span>
+            <h2 class="prize-glass-title">🎁 編輯獎項</h2>
+            <form id="editPrizeForm" class="prize-glass-form">
+                <div id="prizeEditList" class="prize-edit-list"></div>
+                <div class="prize-glass-actions">
+                    <button type="submit" class="btn btn-primary">
+                        儲存獎項設定
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 員工清單彈出視窗 -->
+    <div id="employeeListModal" class="modal employee-glass-overlay">
+        <div class="modal-content employee-list-modal-content employee-glass-card">
+
+            <!-- 關閉 -->
+            <span class="close employee-glass-close" id="employeeListCloseBtn">&times;</span>
+
+            <h2 class="employee-glass-title">👥 員工清單</h2>
+
+            <div class="employee-modal-header employee-glass-header">
+                <div class="employee-modal-header-left">
+                    <span class="employee-modal-total-count">
+                        總人數：
+                        <span id="modalTotalEmployees" class="employee-modal-total-number">0</span> 人
+                    </span>
+
+                    <button id="addEmployeeBtn" class="employee-modal-add-btn">
+                        ➕ 新增員工
+                    </button>
+                </div>
+
+                <input type="text" id="employeeSearchInput" placeholder="🔍 搜尋員工姓名或編號..."
+                    class="employee-modal-search employee-glass-search">
+            </div>
+
+            <div class="employee-modal-table-container employee-glass-table">
+                <table class="employee-modal-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>員工編號</th>
+                            <th>部門</th>
+                            <th>姓名</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeeListTableBody"></tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 編輯員工對話框 -->
+    <div id="editEmployeeModal" class="modal employee-glass-overlay" style="display:none;">
+        <div class="modal-content employee-glass-card">
+
+            <span class="close employee-glass-close" id="editEmployeeCloseBtn">&times;</span>
+
+            <h2 class="employee-glass-title">編輯員工資料</h2>
+
+            <form id="editEmployeeForm" class="employee-glass-form">
+                <input type="hidden" id="editEmployeeBarcode">
+                <input type="hidden" id="editEmployeeWinnerId">
+
+                <div class="form-group glass-form-group">
+                    <label for="editEmployeeDepartment">部門</label>
+                    <input type="text" id="editEmployeeDepartment" class="glass-input" required>
+                </div>
+
+                <div class="form-group glass-form-group">
+                    <label for="editEmployeeName">姓名</label>
+                    <input type="text" id="editEmployeeName" class="glass-input" required>
+                </div>
+
+                <div class="form-group edit-employee-winner-section glass-winner-box" id="editEmployeeWinnerSection">
+                    <label class="edit-employee-winner-label">⚠️ 中獎狀態</label>
+                    <div class="edit-employee-winner-box">
+                        <p id="editEmployeeWinnerInfo" class="edit-employee-winner-info"></p>
+                        <label class="edit-employee-winner-checkbox-label">
+                            <input type="checkbox" id="editEmployeeRemoveWinner">
+                            <span>取消此員工的中獎資格</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions glass-form-actions">
+                    <button type="submit" class="btn btn-primary">儲存</button>
+                    <button type="button" class="btn btn-secondary" id="editEmployeeCancelBtn">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 新增員工對話框 -->
+    <div id="addEmployeeModal" class="modal employee-glass-overlay" style="display:none;">
+        <div class="modal-content employee-glass-card">
+
+            <span class="close employee-glass-close" id="addEmployeeCloseBtn">&times;</span>
+
+            <h2 class="employee-glass-title">新增員工</h2>
+
+            <form id="addEmployeeForm" class="employee-glass-form">
+
+                <div class="form-group glass-form-group">
+                    <label for="addEmployeeBarcode">員工編號</label>
+                    <input type="text" id="addEmployeeBarcode" class="glass-input" required>
+                </div>
+
+                <div class="form-group glass-form-group">
+                    <label for="addEmployeeDepartment">部門</label>
+                    <input type="text" id="addEmployeeDepartment" class="glass-input" required>
+                </div>
+
+                <div class="form-group glass-form-group">
+                    <label for="addEmployeeName">姓名</label>
+                    <input type="text" id="addEmployeeName" class="glass-input" required>
+                </div>
+
+                <div class="form-actions glass-form-actions">
+                    <button type="submit" class="btn btn-primary" id="addEmployeeConfirmBtn">新增</button>
+                    <button type="button" class="btn btn-secondary" id="addEmployeeCancelBtn">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- 🔐 Admin Fullscreen Lock -->
+    <div id="adminLockOverlay" class="admin-lock-overlay">
+        <div class="admin-lock-glass">
+            <h2 class="admin-lock-title">🔐 管理金鑰驗證</h2>
+
+            <p class="admin-lock-desc">
+                請輸入管理金鑰以啟動系統
+            </p>
+
+            <input type="password" id="adminLockTokenInput" class="admin-lock-input" placeholder="管理金鑰" />
+
+            <div id="adminLockError" class="admin-lock-error">
+                金鑰錯誤，請重新輸入
+            </div>
+
+            <button id="adminLockConfirmBtn" class="btn btn-primary admin-lock-btn">
+                解鎖系統
+            </button>
+        </div>
+    </div>
+    <script type="module" src="/js/app.js"></script>
+</body>
+
+</html>
